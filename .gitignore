@@ -1,0 +1,38 @@
+#Entorno virtual de Python
+#------------------------------------------------------------------------------
+/venv/
+/env/
+.env
+
+#Archivos de caché de Python
+#------------------------------------------------------------------------------
+pycache/
+*.py[cod]
+*$py.class
+
+#Base de datos
+#------------------------------------------------------------------------------
+¡MUY IMPORTANTE! Contiene todos los datos de los estudiantes procesados.
+*.sqlite3
+db.sqlite3
+
+#Archivos subidos por el usuario (los reportes CSV/Excel)
+#------------------------------------------------------------------------------
+#¡MUY IMPORTANTE! Esta carpeta contiene los datos académicos originales.
+/uploads/
+/media/
+
+#Archivos de modelo de Machine Learning
+#------------------------------------------------------------------------------
+Por seguridad, los excluimos.
+/ml_models/
+
+#Archivos de configuración y logs
+#------------------------------------------------------------------------------
+*.log
+local_settings.py
+
+#Archivos del sistema operativo
+#------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db

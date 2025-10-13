@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Estudiantes - SIPDE{% endblock %}
+
+{% block content %}
+<h1 class="h2 mb-4">Lista de Estudiantes</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" action="{% url 'lista_estudiantes' %}" class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <label for="q" class="visually-hidden">Buscar por ID</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="q" name="q" placeholder="Buscar por ID de estudiante..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label for="riesgo" class="visually-hidden">Filtrar por Riesgo</label>
+                <select class="form-select" id="riesgo" name="riesgo">
+                    <option value="" {% if not request.GET.riesgo %}selected{% endif %}>-- Todos los estados --</option>
+                    <option value="con_riesgo" {% if request.GET.riesgo == 'con_riesgo' %}selected{% endif %}>En Riesgo</option>
+                    <option value="sin_riesgo" {% if request.GET.riesgo == 'sin_riesgo' %}selected{% endif %}>Sin Riesgo</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                <a href="{% url 'lista_estudiantes' %}" class="btn btn-secondary w-100 mt-2">Limpiar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID Estudiante</th>
+                        <th>Periodo</th>
+                        <th>Promedio Semestral</th>
+                        <th>Prob. Riesgo</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for estudiante in page_obj %}
+                    <tr>
+                        <td>{{ estudiante.id_estudiante }}</td>
+                        <td>{{ estudiante.periodo }}</td>
+                        <td>{{ estudiante.promedio_semestral|floatformat:2 }}</td>
+                        <td>
+                            {% if estudiante.riesgo_porcentaje is not None %}
+                                {{ estudiante.riesgo_porcentaje|floatformat:2 }}%
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if estudiante.ultima_prob_riesgo is not None and estudiante.ultima_prob_riesgo >= umbral %}
+                                <span class="badge bg-danger">En Riesgo</span>
+                            {% else %}
+                                <span class="badge bg-success">Sin Riesgo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'detalle_estudiante' estudiante.id_estudiante %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye-fill"></i> Ver Detalle
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <p class="mb-0">No se encontraron estudiantes con los filtros aplicados.</p>
+                            <small class="text-muted">Asegúrate de haber cargado los datos o intenta limpiar los filtros.</small>
+                            <br><a href="{% url 'lista_estudiantes' %}" class="btn btn-sm btn-link mt-2">Limpiar filtros</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Paginación de estudiantes" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page=1&{{ request.GET.urlencode }}">&laquo; Primera</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                {% else %}
+                     <li class="page-item disabled"><span class="page-link">&laquo; Primera</span></li>
+                    <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+                {% endif %}
+
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ request.GET.urlencode }}">Última &raquo;</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+                    <li class="page-item disabled"><span class="page-link">Última &raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

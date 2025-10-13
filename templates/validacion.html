@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}Validación de Modelo - SIPDE{% endblock %}
+
+{% block content %}
+<h1 class="h2 mb-4">Módulo Experimental de Validación</h1>
+<p class="text-muted">Este módulo permite comparar las predicciones de un periodo con los datos de matrícula reales del siguiente para evaluar el rendimiento del modelo.</p>
+
+<!-- Formulario de Selección de Periodos -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-bold">Seleccionar Periodos a Comparar</div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" class="row g-3 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-5">
+                <label for="periodo_prediccion" class="form-label">1. Periodo donde se hizo la predicción:</label>
+                <select name="periodo_prediccion" id="periodo_prediccion" class="form-select" required>
+                    <option value="">Seleccionar periodo...</option>
+                    {% for periodo in periodos_disponibles %}
+                    <option value="{{ periodo }}" {% if request.POST.periodo_prediccion == periodo %}selected{% endif %}>{{ periodo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label for="archivo_activos" class="form-label">2. Sube el reporte de caracterización del periodo siguiente:</label>
+                <input class="form-control" type="file" id="archivo_activos" name="archivo_activos" required accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Validar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Sección de Resultados -->
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+{% if resultados %}
+<div class="card shadow-sm">
+    <div class="card-header fw-bold">Resultados de la Validación: Predicciones de {{ resultados.periodo_prediccion }}</div>
+    <div class="card-body">
+        
+        {% if resultados.error %}
+            <div class="alert alert-warning">{{ resultados.error }}</div>
+        {% else %}
+            <!-- Métricas Principales -->
+            <div class="row text-center mb-4">
+                <div class="col-md-4">
+                    <div class="p-3 border rounded bg-light">
+                        <h4>Recall (Sensibilidad)</h4>
+                        <p class="fs-1 fw-bold text-primary">{{ resultados.recall|floatformat:2 }}%</p>
+                        <small class="text-muted">De {{ resultados.total_deserciones_reales }} deserciones reales, el modelo predijo correctamente {{ resultados.verdaderos_positivos|length }}.</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded">
+                        <h4>Precisión</h4>
+                        <p class="fs-1 fw-bold text-success">{{ resultados.precision|floatformat:2 }}%</p>
+                        <small class="text-muted">De todas las alertas de riesgo generadas, este porcentaje fue correcto.</small>
+                    </div>
+                </div>
+                 <div class="col-md-4">
+                    <div class="p-3 border rounded">
+                        <h4>Total Deserciones Reales</h4>
+                        <p class="fs-1 fw-bold">{{ resultados.total_deserciones_reales }}</p>
+                        <small class="text-muted">Estudiantes de {{ resultados.periodo_prediccion }} que no continuaron.</small>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Tablas de Detalle -->
+            <h3 class="mt-4">Análisis Detallado de Errores</h3>
+            <p>Los **Falsos Negativos** son el error más crítico, ya que representan a los estudiantes que desertaron y el modelo no logró identificar.</p>
+            
+            <div class="row">
+                <!-- Falsos Negativos (El error más importante) -->
+                <div class="col-md-12 mb-4">
+                    <h5><span class="badge bg-danger">{{ resultados.falsos_negativos|length }}</span> Falsos Negativos (No predichos, pero desertaron)</h5>
+                    <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table table-sm table-striped">
+                            <thead><tr><th>ID Estudiante</th><th>Prob. Predicha</th></tr></thead>
+                            <tbody>
+                            {% for est in resultados.falsos_negativos %}
+                                <tr><td><a href="{% url 'detalle_estudiante' est.id_estudiante %}">{{ est.id_estudiante }}</a></td><td>{{ est.riesgo_porcentaje|floatformat:2 }}%</td></tr>
+                            {% empty %}
+                                <tr><td colspan="2" class="text-center text-success fw-bold">¡Ninguno!</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Falsos Positivos -->
+                <div class="col-md-6">
+                     <h5><span class="badge bg-warning text-dark">{{ resultados.falsos_positivos|length }}</span> Falsos Positivos (Predichos, pero NO desertaron)</h5>
+                     <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table table-sm table-striped">
+                            <thead><tr><th>ID Estudiante</th><th>Prob. Predicha</th></tr></thead>
+                            <tbody>
+                            {% for est in resultados.falsos_positivos %}
+                                <tr><td><a href="{% url 'detalle_estudiante' est.id_estudiante %}">{{ est.id_estudiante }}</a></td><td>{{ est.riesgo_porcentaje|floatformat:2 }}%</td></tr>
+                            {% empty %}
+                                <tr><td colspan="2" class="text-center">Ninguno</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Verdaderos Positivos -->
+                <div class="col-md-6">
+                     <h5><span class="badge bg-success">{{ resultados.verdaderos_positivos|length }}</span> Verdaderos Positivos (Predichos y desertaron)</h5>
+                     <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table table-sm table-striped">
+                            <thead><tr><th>ID Estudiante</th><th>Prob. Predicha</th></tr></thead>
+                            <tbody>
+                            {% for est in resultados.verdaderos_positivos %}
+                                <tr><td><a href="{% url 'detalle_estudiante' est.id_estudiante %}">{{ est.id_estudiante }}</a></td><td>{{ est.riesgo_porcentaje|floatformat:2 }}%</td></tr>
+                            {% empty %}
+                                <tr><td colspan="2" class="text-center">Ninguno</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+

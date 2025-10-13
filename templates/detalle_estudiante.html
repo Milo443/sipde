@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de {{ estudiante.id_estudiante }} - SIPDE{% endblock %}
+
+{% block content %}
+<h1 class="h2 mb-4">Detalle del Estudiante: {{ estudiante.id_estudiante }}</h1>
+
+<div class="row">
+    <div class="col-lg-5 mb-4">
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-header fw-bold">
+                Análisis de Riesgo - Periodo {{ estudiante.periodo }}
+            </div>
+            <div class="card-body">
+                {% if prediccion.error %}
+                    <div class="alert alert-danger">{{ prediccion.error }}</div>
+                {% else %}
+                    <h5 class="card-title">Probabilidad de Deserción: <span class="{% if prediccion.en_riesgo %}text-danger{% else %}text-success{% endif %} fw-bold">{{ prob_porcentaje|floatformat:2 }}%</span></h5>
+                    <div class="progress mb-2" style="height: 25px;">
+                        <div class="progress-bar {% if prediccion.en_riesgo %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ prob_porcentaje }}%;" aria-valuenow="{{ prob_porcentaje }}" aria-valuemin="0" aria-valuemax="100">{{ prob_porcentaje|floatformat:1 }}%</div>
+                    </div>
+                    <p class="card-text">
+                        El estudiante {% if not prediccion.en_riesgo %}<strong>NO</strong>{% endif %} supera el umbral de riesgo del {{ umbral_porcentaje|floatformat:2 }}%.
+                        {% if prediccion.en_riesgo %}
+                            <span class="badge bg-danger fs-6">Requiere Intervención</span>
+                        {% else %}
+                            <span class="badge bg-success fs-6">Monitoreo Estándar</span>
+                        {% endif %}
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">
+                Información General
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between"><strong>Programa:</strong> <span>{{ estudiante.programa }}</span></li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <strong>Estado Académico:</strong>
+                    <span class="badge bg-info text-dark">{{ estudiante.est_alum|default:"No disponible" }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between"><strong>Edad:</strong> <span>{{ estudiante.edad }} años</span></li>
+                <li class="list-group-item d-flex justify-content-between"><strong>Género:</strong> <span>{{ estudiante.genero }}</span></li>
+                <li class="list-group-item d-flex justify-content-between"><strong>Estado Civil:</strong> <span>{{ estudiante.estado_civil }}</span></li>
+                <li class="list-group-item d-flex justify-content-between"><strong>Antigüedad:</strong> <span>{{ estudiante.antiguedad_estudiante|floatformat:0 }} semestres</span></li>
+                <li class="list-group-item d-flex justify-content-between"><strong>¿Es Foráneo?:</strong>
+                    <span>{% if estudiante.es_foraneo == 1 %}Sí{% else %}No{% endif %}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between"><strong>Discapacidad:</strong> <span>{{ estudiante.discapacidad|default:"Ninguna" }}</span></li>
+            </ul>
+        </div>
+
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">
+                Historial Académico
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Periodo</th>
+                                <th>Promedio</th>
+                                <th>Materias Cursadas</th>
+                                <th>Materias Reprobadas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for registro in historial %}
+                            <tr {% if registro.periodo == estudiante.periodo %}class="table-primary"{% endif %}>
+                                <td><strong>{{ registro.periodo }}</strong></td>
+                                <td>{{ registro.promedio_semestral|floatformat:2 }}</td>
+                                <td>{{ registro.num_materias_cursadas }}</td>
+                                <td>{{ registro.num_materias_reprobadas }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No se encontró historial para este estudiante.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
