@@ -5,11 +5,19 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.paginator import Paginator
 import json
+from django.shortcuts import redirect
+
+from django.contrib.auth import logout
 
 import pandas as pd
 from .models import EstudiantePeriodo
 from .predictions import PredictionService
 from .services import validar_predicciones_con_lista_activos
+
+def Logout(request):
+    logout(request)
+    return redirect('/login/')  # Redirige a la página de login después de cerrar sesión
+
 
 def dashboard_view(request):
     # Obtener todos los periodos únicos que existen en la base de datos para el desplegable
