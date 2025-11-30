@@ -6,8 +6,10 @@ from django.conf import settings
 from django.core.paginator import Paginator
 import json
 
-import pandas as pd
+import csv
+from django.http import HttpResponse
 from .models import EstudiantePeriodo
+import pandas as pd
 from .predictions import PredictionService
 from .services import validar_predicciones_con_lista_activos
 
@@ -127,16 +129,13 @@ def lista_estudiantes_view(request):
     latest_period_obj = EstudiantePeriodo.objects.order_by('-periodo').first()
     
     if latest_period_obj:
-        # 1. Empezamos con el queryset base (todos los estudiantes del último periodo)
         queryset = EstudiantePeriodo.objects.filter(
             periodo=latest_period_obj.periodo
         ).order_by('-ultima_prob_riesgo')
         
-        # 2. Obtenemos los valores de los filtros desde la URL (request.GET)
         query_id = request.GET.get('q')
         filtro_riesgo = request.GET.get('riesgo')
         
-        # 3. Aplicamos los filtros al queryset si existen
         if query_id:
             queryset = queryset.filter(id_estudiante__icontains=query_id)
             
@@ -144,11 +143,37 @@ def lista_estudiantes_view(request):
             queryset = queryset.filter(ultima_prob_riesgo__gte=settings.UMBRAL_PREDICCION)
         elif filtro_riesgo == 'sin_riesgo':
             queryset = queryset.filter(ultima_prob_riesgo__lt=settings.UMBRAL_PREDICCION)
-
     else:
-        queryset = EstudiantePeriodo.objects.none() # Queryset vacío si no hay datos
+        queryset = EstudiantePeriodo.objects.none()
 
-    # 4. La paginación se aplica al queryset ya filtrado
+    # --- LÓGICA PARA EXPORTAR A CSV (CORREGIDA) ---
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="lista_estudiantes.csv"'
+        
+        writer = csv.writer(response)
+        
+        # 1. ENCABEZADOS CORREGIDOS: Personaliza las columnas que necesites.
+        writer.writerow(['ID Estudiante', 'Periodo', 'Prob. Riesgo', 'Programa', 'Promedio', 'Género'])
+        
+        # 2. CAMPOS DEL MODELO CORREGIDOS: Usa los nombres de campo reales.
+        # Asegúrate que el orden coincida con los encabezados de arriba.
+        estudiantes_a_exportar = queryset.values_list(
+            'id_estudiante', 
+            'periodo', 
+            'ultima_prob_riesgo', 
+            'programa', 
+            'promedio_semestral',
+            'genero'
+        )
+
+        for estudiante in estudiantes_a_exportar:
+            writer.writerow(estudiante)
+            
+        return response
+
+    # --- FIN LÓGICA CSV ---
+
     paginator = Paginator(queryset, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -156,10 +181,11 @@ def lista_estudiantes_view(request):
     context = {
         'page_obj': page_obj,
         'umbral': settings.UMBRAL_PREDICCION,
-        # Pasamos los filtros de vuelta a la plantilla para mantener el estado del formulario
         'filtros_aplicados': request.GET 
     }
+    
     return render(request, 'lista_estudiantes.html', context)
+
 
 @login_required
 def detalle_estudiante_view(request, id_estudiante):
@@ -208,7 +234,9 @@ def validacion_view(request):
                 archivo_nombre = archivo_activos.name
                 df_activos = None # Inicializar el DataFrame como Nulo
 
+                #carga html o csv
                 if archivo_nombre.lower().endswith('.csv'):
+
                     # Lista de codificaciones comunes a probar en orden de probabilidad
                     encodings_to_try = ['cp1252', 'latin1', 'utf-8']
                     

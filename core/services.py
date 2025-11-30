@@ -46,7 +46,7 @@ def procesar_y_guardar_datos_de_periodo(archivos_cargados, periodo_actual):
     # Excluir estudiantes graduados/egresados ANTES de cualquier otro procesamiento
     caracterizacion_df = dataframes_nuevos["caracterizacion"]
     if 'est_alum' in caracterizacion_df.columns:
-        estados_a_excluir = ['--', '---', 'GRADUADO', 'EGRESADO']
+        estados_a_excluir = ['--', 'INACTIVO', 'GRADUADO', 'EGRESADO']
         caracterizacion_df['est_alum'] = caracterizacion_df['est_alum'].astype(str).str.strip().str.upper()
         caracterizacion_df = caracterizacion_df[~caracterizacion_df['est_alum'].isin(estados_a_excluir)]
         dataframes_nuevos["caracterizacion"] = caracterizacion_df

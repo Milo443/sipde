@@ -25,7 +25,7 @@ db.sqlite3
 #Archivos de modelo de Machine Learning
 #------------------------------------------------------------------------------
 Por seguridad, los excluimos.
-/ml_models/
+#/ml_models/
 
 #Archivos de configuración y logs
 #------------------------------------------------------------------------------

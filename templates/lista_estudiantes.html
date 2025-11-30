@@ -107,8 +107,12 @@
                     <li class="page-item disabled"><span class="page-link">Última &raquo;</span></li>
                 {% endif %}
             </ul>
+
         </nav>
         {% endif %}
+        <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-success">
+            <i class="fas fa-file-csv"></i> Descargar CSV
+        </a>
     </div>
 </div>
 {% endblock %}
